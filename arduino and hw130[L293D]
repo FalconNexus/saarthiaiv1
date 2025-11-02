@@ -1,0 +1,76 @@
+#include <AFMotor.h>
+#include <SoftwareSerial.h>
+
+SoftwareSerial espSerial(10, 11); // RX, TX
+AF_DCMotor m1(1), m2(2), m3(3), m4(4);
+
+bool moving = false;
+unsigned long moveStart = 0;
+unsigned long moveDuration = 0;
+int moveType = 0; // 1=fwd,2=back,3=left,4=right
+
+void setup() {
+  Serial.begin(9600);
+  espSerial.begin(9600);
+  Serial.println("🤖 Arduino ready, waiting for command from ESP32...");
+  stopMotors();
+}
+
+void loop() {
+  if (espSerial.available()) {
+    String cmd = espSerial.readStringUntil('\n');
+    cmd.trim();
+    Serial.println("📩 Command received: " + cmd);
+
+    if (cmd.equalsIgnoreCase("forward")) startMove(1, 10000);
+    else if (cmd.equalsIgnoreCase("backward")) startMove(2, 10000);
+    else if (cmd.equalsIgnoreCase("left")) startMove(3, 7000);
+    else if (cmd.equalsIgnoreCase("right")) startMove(4, 7000);
+    else if (cmd.equalsIgnoreCase("stop")) stopMotors();
+  }
+
+  // Continuous movement controller
+  if (moving) {
+    if (millis() - moveStart >= moveDuration) stopMotors();
+    else runMovement();
+  }
+}
+
+void startMove(int type, unsigned long duration) {
+  moveType = type;
+  moveStart = millis();
+  moveDuration = duration;
+  moving = true;
+  runMovement();
+}
+
+void runMovement() {
+  setSpeedAll(150);
+
+  switch (moveType) {
+    case 1: // forward
+      m1.run(FORWARD); m2.run(FORWARD); m3.run(FORWARD); m4.run(FORWARD);
+      break;
+    case 2: // backward
+      m1.run(BACKWARD); m2.run(BACKWARD); m3.run(BACKWARD); m4.run(BACKWARD);
+      break;
+    case 3: // left
+      m1.run(BACKWARD); m2.run(FORWARD); m3.run(BACKWARD); m4.run(FORWARD);
+      break;
+    case 4: // right
+      m1.run(FORWARD); m2.run(BACKWARD); m3.run(FORWARD); m4.run(BACKWARD);
+      break;
+  }
+}
+
+void stopMotors() {
+  if (moving) Serial.println("🛑 Stopping motors");
+  moving = false;
+  m1.run(RELEASE); m2.run(RELEASE);
+  m3.run(RELEASE); m4.run(RELEASE);
+}
+
+void setSpeedAll(int spd) {
+  m1.setSpeed(spd); m2.setSpeed(spd);
+  m3.setSpeed(spd); m4.setSpeed(spd);
+}
