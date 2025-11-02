@@ -1,0 +1,53 @@
+#include <WiFi.h>
+
+// WiFi credentials
+const char* ssid = "SSID";
+const char* password = "ssid pass";
+
+// Create server on port 8080
+WiFiServer server(8080);
+
+void setup() {
+  Serial.begin(9600);                 // Debug to PC
+  Serial2.begin(9600, SERIAL_8N1, 16, 17); // RX=16, TX=17 -> Arduino (via Serial2)
+
+  // Connect to WiFi
+  Serial.println("Connecting to WiFi...");
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(300);
+    Serial.print(".");
+  }
+
+  Serial.println("\nWiFi connected!");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
+
+  // Start server
+  server.begin();
+  Serial.println("Server started!");
+}
+
+void loop() {
+  WiFiClient client = server.available();
+  if (!client) {
+    delay(10);
+    return;
+  }
+
+  Serial.println("Client connected");
+
+  while (client.connected()) {
+    if (client.available()) {
+      String cmd = client.readStringUntil('\n');
+      cmd.trim();
+      if (cmd.length()) {
+        Serial.println("Received: " + cmd);
+        Serial2.println(cmd); // Forward command to Arduino
+      }
+    }
+  }
+
+  client.stop();
+  Serial.println("Client disconnected");
+}
