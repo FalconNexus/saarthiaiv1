@@ -1,61 +1,81 @@
 #include <WiFi.h>
 
-// WiFi credentials
-const char* ssid = "YourWiFiName";
-const char* password = "YourWiFiPassword";
+// ==== WiFi Credentials ====
+const char* ssid = "SSID";
+const char* password = "pass";
 
-// Create server on port 8080
+// ==== Server Setup ====
 WiFiServer server(8080);
+WiFiClient client;
 
 void setup() {
-  Serial.begin(9600);  // Debug
-  Serial2.begin(9600, SERIAL_8N1, 16, 17); // RX=16, TX=17 → Arduino
+  Serial.begin(9600);
+  Serial2.begin(9600, SERIAL_8N1, 16, 17); // RX=16, TX=17 (to Arduino)
 
-  Serial.println("Connecting to WiFi...");
+  Serial.println("\nConnecting to WiFi...");
   WiFi.begin(ssid, password);
 
-  int retry = 0;
-  while (WiFi.status() != WL_CONNECTED && retry < 30) {
+  int retries = 0;
+  while (WiFi.status() != WL_CONNECTED && retries < 30) {
     delay(500);
     Serial.print(".");
-    retry++;
+    retries++;
   }
 
-  if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("\n❌ WiFi connection failed!");
-    return;
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("\n✅ WiFi Connected!");
+    Serial.print("📡 IP Address: ");
+    Serial.println(WiFi.localIP());
+    server.begin();
+    Serial.println("🌐 Server started on port 8080");
+  } else {
+    Serial.println("\n❌ WiFi Connection Failed!");
   }
-
-  Serial.println("\n✅ WiFi connected!");
-  Serial.print("📡 ESP32 IP: ");
-  Serial.println(WiFi.localIP());
-
-  server.begin();
-  Serial.println("🌐 Server started on port 8080!");
 }
 
 void loop() {
-  WiFiClient client = server.available();
-  if (!client) {
-    delay(10);
-    return;
+  // Accept client
+  if (!client || !client.connected()) {
+    client = server.available();
+    if (!client) {
+      delay(100);
+      return;
+    }
+    Serial.println("💻 Client Connected!");
   }
 
-  Serial.println("💻 Client connected");
+  // Handle incoming command
+  if (client.available()) {
+    String cmd = client.readStringUntil('\n');
+    cmd.trim();
 
-  while (client.connected()) {
-    if (client.available()) {
-      String cmd = client.readStringUntil('\n');
-      cmd.trim();
+    if (cmd.length() > 0) {
+      Serial.print("📩 Received: ");
+      Serial.println(cmd);
 
-      if (cmd.length()) {
-        Serial.println("📩 Received: " + cmd);
-        Serial2.println(cmd);      // Send command to Arduino
-        client.println("OK");      // Send confirmation to PC
+      // Handle special commands
+      if (cmd == "PING") {
+        client.println("PONG");
+      } 
+      else {
+        Serial2.println(cmd);   // Send to Arduino
+        client.println("OK");   // Confirm to Python
       }
     }
   }
 
-  client.stop();
-  Serial.println("🔌 Client disconnected");
+  // Heartbeat every 3 seconds
+  static unsigned long lastPing = 0;
+  if (millis() - lastPing > 3000) {
+    if (client.connected()) {
+      client.println("ALIVE");
+    }
+    lastPing = millis();
+  }
+
+  // Disconnect client
+  if (!client.connected()) {
+    Serial.println("🔌 Client Disconnected");
+    client.stop();
+  }
 }
