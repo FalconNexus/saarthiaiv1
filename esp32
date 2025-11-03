@@ -1,31 +1,37 @@
 #include <WiFi.h>
 
 // WiFi credentials
-const char* ssid = "SSID";
-const char* password = "ssid pass";
+const char* ssid = "YourWiFiName";
+const char* password = "YourWiFiPassword";
 
 // Create server on port 8080
 WiFiServer server(8080);
 
 void setup() {
-  Serial.begin(9600);                 // Debug to PC
-  Serial2.begin(9600, SERIAL_8N1, 16, 17); // RX=16, TX=17 -> Arduino (via Serial2)
+  Serial.begin(9600);  // Debug
+  Serial2.begin(9600, SERIAL_8N1, 16, 17); // RX=16, TX=17 → Arduino
 
-  // Connect to WiFi
   Serial.println("Connecting to WiFi...");
   WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(300);
+
+  int retry = 0;
+  while (WiFi.status() != WL_CONNECTED && retry < 30) {
+    delay(500);
     Serial.print(".");
+    retry++;
   }
 
-  Serial.println("\nWiFi connected!");
-  Serial.print("IP address: ");
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("\n❌ WiFi connection failed!");
+    return;
+  }
+
+  Serial.println("\n✅ WiFi connected!");
+  Serial.print("📡 ESP32 IP: ");
   Serial.println(WiFi.localIP());
 
-  // Start server
   server.begin();
-  Serial.println("Server started!");
+  Serial.println("🌐 Server started on port 8080!");
 }
 
 void loop() {
@@ -35,19 +41,21 @@ void loop() {
     return;
   }
 
-  Serial.println("Client connected");
+  Serial.println("💻 Client connected");
 
   while (client.connected()) {
     if (client.available()) {
       String cmd = client.readStringUntil('\n');
       cmd.trim();
+
       if (cmd.length()) {
-        Serial.println("Received: " + cmd);
-        Serial2.println(cmd); // Forward command to Arduino
+        Serial.println("📩 Received: " + cmd);
+        Serial2.println(cmd);      // Send command to Arduino
+        client.println("OK");      // Send confirmation to PC
       }
     }
   }
 
   client.stop();
-  Serial.println("Client disconnected");
+  Serial.println("🔌 Client disconnected");
 }
