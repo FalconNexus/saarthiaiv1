@@ -1,3 +1,4 @@
+
 # =================================================================
 # Saarthi AI v1.0 - ESP32 WIRELESS VERSION
 # =================================================================
@@ -39,7 +40,7 @@ except ImportError:
 # =========================================
 # ESP32 WIRELESS COMMUNICATION
 # =========================================
-ESP32_IP = "192.168.1.12"  # Change this to your ESP32's IP address
+ESP32_IP = "192.168.1.12"  
 ESP32_PORT = 8080
 
 def send_command(cmd):
@@ -200,7 +201,7 @@ class EnhancedAIBrain:
                 "I am capable of searching the web using powerful engines like Wikipedia, solving complex math problems, and communicating in both English and Hindi. "
                 "I am integrated with an **ESP32** microcontroller, allowing me to translate your voice commands like 'move forward' into physical actions wirelessly. "
                 "My visual interface is a dynamic face rendered using **Pygame**. My primary purpose is to be a helpful, reliable, and respectful guide for your projects and queries. "
-                "My developer is **Shivam Singh**."
+                "My developer & designer are **Shivam Singh and Param**."
             )
         return None
 
@@ -712,8 +713,8 @@ class AnimatedCaptionSystem:
 class HardwareController:
     def __init__(self):
         self.connected = False
-        self.esp32_ip = ESP32_IP
-        self.esp32_port = ESP32_PORT
+        self.esp32_ip = "192.168.1.12"
+        self.esp32_port = 8080
 
     def connect(self):
         """Test ESP32 connection"""
